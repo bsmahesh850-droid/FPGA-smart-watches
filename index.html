@@ -1,443 +1,666 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Project 1: FPGA Digital Stopwatch</title>
-<style>
-  /* Reset and base */
-  *, *::before, *::after {
-    box-sizing: border-box;
-  }
-  body {
-    margin: 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #001f3f 0%, #003366 100%);
-    color: #0ff; /* bright cyan */
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
-  a, button {
-    color: #0ff;
-    cursor: pointer;
-    border: none;
-    background: none;
-    font: inherit;
-  }
-  button:focus-visible {
-    outline: 2px solid #0ff;
-    outline-offset: 2px;
-  }
-  header, main, footer {
-    width: 90%;
-    max-width: 900px;
-    margin: 1rem auto;
-  }
-  h1, h2, h3 {
-    font-weight: 700;
-    margin: 0.5em 0 0.2em 0;
-  }
-  h1 {
-    font-size: 2rem;
-    letter-spacing: 0.02em;
-    color: #0ff;
-    text-shadow: 0 0 6px #00ffff99, 0 0 15px #0ff;
-  }
-  h2 {
-    color: #0ff;
-    font-weight: 600;
-    border-bottom: 2px solid #099;
-    padding-bottom: 0.2em;
-  }
-  p.subtitle {
-    font-weight: 400;
-    color: #4fffcf;
-    margin-top: 0.1rem;
-    margin-bottom: 1.2rem;
-    font-size: 1.15rem;
-  }
-  /* Stopwatch container */
-  #stopwatch-section {
-    background: #002b4f;
-    border: 2px solid #099;
-    border-radius: 0.7rem;
-    padding: 1rem 1.5rem 2rem;
-    box-shadow: 0 0 12px #0ff6ccaa inset;
-  }
-  #display {
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 5rem;
-    color: #049642; /* green */
-    text-shadow:
-      0 0 8px #00ff77,
-      0 0 20px #00ff7f,
-      0 0 40px #00ff5f,
-      0 0 50px #00cc44;
-    letter-spacing: 0.15em;
-    user-select: none;
-    max-width: 320px;
-    margin: 0 auto 1rem;
-  }
-  /* 7-segment styled digits */
-  /* Each digit shaped by a monospace font for clarity */
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FPGA Digital Stopwatch</title>
+  <style>
+    :root {
+      --bg: #07111f;
+      --panel: #0e1d30;
+      --panel-2: #12263e;
+      --line: #29435f;
+      --text: #edf5ff;
+      --muted: #9bb0c7;
+      --cyan: #45d9de;
+      --green: #a7ff5a;
+      --orange: #ffbc64;
+      --red: #ff7b7b;
+    }
 
-  #status {
-    text-align: center;
-    font-weight: 600;
-    font-size: 1.15rem;
-    color: #0ff;
-    text-shadow: 0 0 4px #0fe;
-    margin-bottom: 1.2rem;
-  }
-  /* Buttons */
-  .btn-group {
-    display: flex;
-    justify-content: center;
-    gap: 1rem;
-    flex-wrap: wrap;
-  }
-  button.stopwatch-btn {
-    background-color: #004060;
-    padding: 0.65rem 1.7rem;
-    border-radius: 0.55rem;
-    color: #0ff;
-    font-weight: 700;
-    font-size: 1.1rem;
-    box-shadow: 0 0 10px #0ff inset;
-    transition:
-      background-color 0.3s ease,
-      box-shadow 0.3s ease,
-      color 0.3s ease;
-    user-select: none;
-  }
-  button.stopwatch-btn:hover,
-  button.stopwatch-btn:focus-visible {
-    background-color: #00aaff;
-    color: #002233;
-    box-shadow: 0 0 20px #0ff, 0 0 8px #00ccff inset;
-  }
+    * { box-sizing: border-box; }
 
-  /* Educational sections */
-  section.education-section {
-    margin-top: 2rem;
-    padding: 1rem 1.1rem 1.3rem;
-    border: 2px solid #006688;
-    border-radius: 0.7rem;
-    background: #001a33;
-    box-shadow: 0 0 12px #0099cc33 inset;
-  }
-  section.education-section h2 {
-    margin-top: 0;
-  }
-  /* 1. FPGA Data Flow visual */
-  #fpga-data-flow {
-    font-family: 'Courier New', Courier, monospace;
-    color: #0ff;
-    line-height: 1.5;
-    user-select: none;
-    font-weight: 600;
-  }
-  #fpga-data-flow code {
-    background: #003355;
-    border-radius: 0.3rem;
-    padding: 0.2rem 0.5rem;
-    box-shadow: 0 0 5px #0ffccaaa inset;
-  }
+    body {
+      margin: 0;
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+      background:
+        radial-gradient(circle at top left, #123a54 0, transparent 32rem),
+        linear-gradient(135deg, #07111f, #0a1728);
+    }
 
-  /* Cards container and cards for "What You Will Learn" */
-  #learn-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 1rem;
-    margin-top: 1rem;
-  }
-  .learn-card {
-    background: #004466;
-    border: 2px solid #00ccaa;
-    border-radius: 0.6rem;
-    box-shadow:
-      0 0 10px #00ccaa44 inset,
-      0 0 8px #00eeccaa;
-    padding: 0.8rem 1rem;
-    font-weight: 700;
-    font-size: 1rem;
-    text-align: center;
-    color: #0ffaee;
-    user-select: none;
-    transition:
-      background-color 0.3s ease,
-      transform 0.15s ease;
-  }
-  .learn-card:hover,
-  .learn-card:focus-visible {
-    background-color: #00e6bb;
-    color: #003322;
-    outline: none;
-    cursor: pointer;
-    transform: scale(1.05);
-    box-shadow:
-      0 0 18px #00ccaaee,
-      0 0 12px #00eeccff;
-  }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.18;
+      background-image:
+        linear-gradient(#ffffff14 1px, transparent 1px),
+        linear-gradient(90deg, #ffffff14 1px, transparent 1px);
+      background-size: 38px 38px;
+      z-index: -1;
+    }
 
-  /* Lists styling for What You Will Build */
-  #what-you-build ul {
-    list-style-type: none;
-    padding-left: 1.2rem;
-    margin-bottom: 0;
-  }
-  #what-you-build ul li::before {
-    content: "▹";
-    color: #00ccbb;
-    margin-right: 0.5rem;
-    font-weight: 700;
-  }
+    .container {
+      width: min(1120px, calc(100% - 32px));
+      margin: auto;
+    }
 
-  /* How It Works text style */
-  #how-it-works p {
-    max-width: 720px;
-    line-height: 1.5;
-    font-size: 1.1rem;
-    color: #0ff;
-  }
+    header {
+      padding: 58px 0 34px;
+    }
 
-  /* Footer */
-  footer {
-    text-align: center;
-    padding: 1rem;
-    margin-top: auto;
-    font-style: italic;
-    color: #0f8f7f;
-    border-top: 1px solid #004455;
-    user-select: none;
-  }
+    .tag {
+      color: var(--cyan);
+      font-size: 0.75rem;
+      font-weight: bold;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+    }
 
-  /* Responsive text scaling */
-  @media (max-width: 400px) {
+    h1 {
+      margin: 10px 0;
+      font-size: clamp(2.4rem, 6vw, 4.8rem);
+      letter-spacing: -0.06em;
+    }
+
+    .subtitle {
+      max-width: 680px;
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 1.08rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.25fr 0.75fr;
+      gap: 22px;
+    }
+
+    .panel {
+      background: linear-gradient(145deg, #10243b, #0b192b);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 26px;
+      box-shadow: 0 18px 45px #00000033;
+    }
+
+    .panel-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+
+    .panel-title h2 {
+      margin: 0;
+      font-size: 1.25rem;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: bold;
+    }
+
+    .status::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      background: #6c7f92;
+      border-radius: 50%;
+    }
+
+    .status.running {
+      color: var(--green);
+      border-color: #477e4b;
+    }
+
+    .status.running::before {
+      background: var(--green);
+      box-shadow: 0 0 12px var(--green);
+    }
+
+    .display-box {
+      padding: 32px 18px;
+      border: 1px solid #2a4b3c;
+      border-radius: 16px;
+      text-align: center;
+      background: #07130d;
+      box-shadow: inset 0 0 38px #76ff5b12;
+    }
+
+    .display-label {
+      display: flex;
+      justify-content: space-between;
+      color: #82a28b;
+      font-family: monospace;
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+    }
+
     #display {
-      font-size: 3.5rem;
-      max-width: 260px;
+      margin: 18px 0 4px;
+      color: var(--green);
+      font-family: "Courier New", monospace;
+      font-size: clamp(3.5rem, 10vw, 6.8rem);
+      font-weight: bold;
+      letter-spacing: 0.05em;
+      text-shadow: 0 0 12px #a7ff5a99, 0 0 30px #a7ff5a44;
     }
-    .stopwatch-btn {
-      font-size: 1rem;
-      padding: 0.55rem 1.2rem;
-    }
-  }
-  @media (min-width: 900px) {
-    main {
-      width: 70vw;
-      max-width: none;
-    }
-  }
 
-  /* Lap/split times section */
-  #laps-section {
-    margin-top: 1.5rem;
-    background: #003355;
-    border-radius: 0.6rem;
-    padding: 0.9rem 1rem;
-    box-shadow: 0 0 12px #0ffaaa55 inset;
-    max-height: 180px;
-    overflow-y: auto;
-    border: 2px solid #00bbcc;
-  }
-  #laps-section h3 {
-    margin-top: 0;
-    color: #0ff;
-  }
-  #laps-list {
-    margin: 0;
-    padding-left: 1rem;
-    color: #0ffaee;
-    font-family: 'Courier New', Courier, monospace;
-    list-style-type: decimal;
-    font-size: 1.1rem;
-  }
-  #laps-list li {
-    padding: 0.15rem 0;
-    user-select: text;
-  }
-</style>
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    button {
+      min-height: 48px;
+      border: 1px solid #3d5673;
+      border-radius: 10px;
+      color: var(--text);
+      background: #182e49;
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.2s;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      background: #244464;
+    }
+
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .start {
+      color: #07130d;
+      background: var(--green);
+      border-color: var(--green);
+    }
+
+    .start:hover:not(:disabled) {
+      background: #c4ff8b;
+    }
+
+    .reset:hover {
+      color: var(--orange);
+      border-color: var(--orange);
+    }
+
+    .lap:hover {
+      color: var(--cyan);
+      border-color: var(--cyan);
+    }
+
+    .laps {
+      margin-top: 20px;
+      padding: 14px;
+      border: 1px solid #29445d;
+      border-radius: 12px;
+      background: #091728;
+    }
+
+    .laps h3 {
+      margin: 0 0 10px;
+      color: var(--cyan);
+      font-size: 0.9rem;
+    }
+
+    #lap-list {
+      max-height: 125px;
+      margin: 0;
+      padding-left: 25px;
+      overflow-y: auto;
+      color: var(--muted);
+      font-family: monospace;
+      line-height: 1.7;
+    }
+
+    .flow-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .flow-node {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      gap: 12px;
+      align-items: center;
+      padding: 13px;
+      border: 1px solid #29445d;
+      border-radius: 12px;
+      background: #0b1d31;
+      transition: 0.2s;
+    }
+
+    .flow-node.active {
+      border-color: var(--green);
+      box-shadow: 0 0 16px #a7ff5a33;
+    }
+
+    .flow-number {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      color: var(--cyan);
+      background: #123950;
+      font-family: monospace;
+      font-weight: bold;
+    }
+
+    .flow-node strong {
+      display: block;
+      font-size: 0.9rem;
+    }
+
+    .flow-node small {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-family: monospace;
+      font-size: 0.74rem;
+    }
+
+    .section {
+      margin-top: 24px;
+    }
+
+    .section h2 {
+      margin-bottom: 8px;
+    }
+
+    .section > p {
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    .hardware-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-top: 20px;
+    }
+
+    .hardware-card {
+      padding: 17px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #0d1d30;
+    }
+
+    .hardware-card span {
+      color: var(--cyan);
+      font-size: 0.75rem;
+      font-weight: bold;
+      letter-spacing: 0.08em;
+    }
+
+    .hardware-card h3 {
+      margin: 10px 0 7px;
+      font-size: 1rem;
+    }
+
+    .hardware-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.5;
+    }
+
+    .log {
+      margin-top: 24px;
+      padding: 20px;
+      border: 1px solid #31536b;
+      border-radius: 15px;
+      background: #06111d;
+    }
+
+    .log h2 {
+      margin: 0 0 12px;
+      color: var(--cyan);
+      font-size: 1rem;
+    }
+
+    #event-log {
+      min-height: 120px;
+      max-height: 220px;
+      overflow-y: auto;
+      color: #a9c4d9;
+      font-family: monospace;
+      font-size: 0.83rem;
+      line-height: 1.7;
+    }
+
+    .log-entry { border-bottom: 1px solid #ffffff0f; }
+
+    footer {
+      padding: 38px 0;
+      color: #71869d;
+      text-align: center;
+      font-size: 0.85rem;
+    }
+
+    @media (max-width: 850px) {
+      .grid { grid-template-columns: 1fr; }
+      .hardware-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 500px) {
+      .buttons { grid-template-columns: repeat(2, 1fr); }
+      .hardware-grid { grid-template-columns: 1fr; }
+      .panel { padding: 18px; }
+    }
+  </style>
 </head>
 <body>
-<header>
-  <h1>Project 1: FPGA Digital Stopwatch</h1>
-  <p class="subtitle" tabindex="0">An interactive simulation of a stopwatch designed using FPGA concepts.</p>
-</header>
-
-<main>
-  <section id="stopwatch-section" aria-label="Interactive FPGA Digital Stopwatch">
-    <div id="display" aria-live="polite" role="timer" aria-atomic="true" aria-label="Stopwatch display showing minutes and seconds">
-      00:00
-    </div>
-    <div id="status" aria-live="polite" aria-atomic="true" aria-label="Stopwatch status">
-      Stopped
-    </div>
-    <div class="btn-group" role="group" aria-label="Stopwatch controls">
-      <button type="button" id="start-btn" class="stopwatch-btn" aria-pressed="false">Start</button>
-      <button type="button" id="stop-btn" class="stopwatch-btn" aria-pressed="true" disabled>Stop</button>
-      <button type="button" id="reset-btn" class="stopwatch-btn" aria-pressed="false">Reset</button>
-      <button type="button" id="lap-btn" class="stopwatch-btn" aria-pressed="false" disabled>Lap</button>
-    </div>
-    <section id="laps-section" aria-label="Lap times section" tabindex="0" aria-live="polite" aria-atomic="true" hidden>
-      <h3>Lap Times</h3>
-      <ol id="laps-list" role="list"></ol>
-    </section>
-  </section>
-
-  <section id="fpga-data-flow-section" class="education-section" tabindex="0" aria-labelledby="fpga-data-flow-title">
-    <h2 id="fpga-data-flow-title">FPGA Data Flow</h2>
-    <pre id="fpga-data-flow" aria-label="Data flow: Clock → Clock Divider → 1-Second Pulse → Counter → Seconds / Minutes → 7-Segment Display">Clock → Clock Divider → 1-Second Pulse → Counter → Seconds / Minutes → 7-Segment Display</pre>
-  </section>
-
-  <section id="what-you-build" class="education-section" tabindex="0" aria-labelledby="what-you-build-title">
-    <h2 id="what-you-build-title">What You Will Build</h2>
-    <ul>
-      <li>Start, Stop, Reset</li>
-      <li>Seconds counter</li>
-      <li>Minutes counter</li>
-      <li>7-segment display</li>
-      <li>Lap/Split time feature</li>
-      <li>Actual FPGA hardware concept</li>
-    </ul>
-  </section>
-
-  <section id="what-you-learn" class="education-section" tabindex="0" aria-labelledby="what-you-learn-title">
-    <h2 id="what-you-learn-title">What You Will Learn</h2>
-    <div id="learn-cards" role="list" aria-label="Learning topics">
-      <div class="learn-card" role="listitem" tabindex="0">Verilog</div>
-      <div class="learn-card" role="listitem" tabindex="0">RTL Design</div>
-      <div class="learn-card" role="listitem" tabindex="0">Clock</div>
-      <div class="learn-card" role="listitem" tabindex="0">Counter</div>
-      <div class="learn-card" role="listitem" tabindex="0">FSM</div>
-      <div class="learn-card" role="listitem" tabindex="0">7-Segment Display</div>
-      <div class="learn-card" role="listitem" tabindex="0">Simulation</div>
-      <div class="learn-card" role="listitem" tabindex="0">FPGA</div>
-    </div>
-  </section>
-
-  <section id="how-it-works" class="education-section" tabindex="0" aria-labelledby="how-it-works-title">
-    <h2 id="how-it-works-title">How It Works</h2>
-    <p>
-      A fast FPGA clock runs continuously and is divided down by a clock divider circuit to create a precise 1-second pulse. This pulse drives counters that store the current time in minutes and seconds. The values from the counters are then sent to a display driver, which lights up segments of a 7-segment display to show the time. This simulation emulates that hardware concept interacting in your browser.
+  <header class="container">
+    <div class="tag">FPGA Lab / Project 01</div>
+    <h1>Digital Stopwatch</h1>
+    <p class="subtitle">
+      An interactive FPGA stopwatch simulation. Start the clock and watch the virtual
+      hardware data flow from a 50 MHz input clock to the seven-segment display.
     </p>
-  </section>
-</main>
+  </header>
 
-<footer>
-  Educational FPGA Project
-</footer>
+  <main class="container">
+    <section class="grid">
+      <article class="panel">
+        <div class="panel-title">
+          <h2>Interactive Stopwatch</h2>
+          <div id="status" class="status">Stopped</div>
+        </div>
 
-<script>
-  // Stopwatch functionality with lap/split feature
-  (() => {
-    const displayEl = document.getElementById('display');
-    const statusEl = document.getElementById('status');
-    const startBtn = document.getElementById('start-btn');
-    const stopBtn = document.getElementById('stop-btn');
-    const resetBtn = document.getElementById('reset-btn');
-    const lapBtn = document.getElementById('lap-btn');
-    const lapsSection = document.getElementById('laps-section');
-    const lapsList = document.getElementById('laps-list');
+        <div class="display-box">
+          <div class="display-label">
+            <span>MM : SS</span>
+            <span>7-SEGMENT OUTPUT</span>
+          </div>
+          <div id="display" role="timer" aria-live="polite">00:00</div>
+        </div>
 
-    let running = false;
-    let minutes = 0;
-    let seconds = 0;
-    let intervalId = null;
+        <div class="buttons">
+          <button id="start-btn" class="start">Start</button>
+          <button id="stop-btn" disabled>Stop</button>
+          <button id="lap-btn" class="lap" disabled>Lap</button>
+          <button id="reset-btn" class="reset">Reset</button>
+        </div>
 
-    // Array holds lap times as {min, sec}
-    let laps = [];
+        <div class="laps">
+          <h3>Lap Times</h3>
+          <ol id="lap-list">
+            <li>No laps recorded yet.</li>
+          </ol>
+        </div>
+      </article>
 
-    // Format numbers with leading zeros
-    function formatTime(m, s) {
-      return `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
-    }
+      <aside class="panel">
+        <div class="panel-title">
+          <h2>Live FPGA Data Flow</h2>
+        </div>
 
-    function updateUI() {
-      displayEl.textContent = formatTime(minutes, seconds);
-      statusEl.textContent = running ? 'Running' : 'Stopped';
+        <div class="flow-list">
+          <div id="clock-node" class="flow-node">
+            <div class="flow-number">01</div>
+            <div>
+              <strong>Clock Input</strong>
+              <small id="clock-value">clk_50MHz · 0 cycles</small>
+            </div>
+          </div>
 
-      startBtn.disabled = running;
-      startBtn.setAttribute('aria-pressed', running ? 'true' : 'false');
-      stopBtn.disabled = !running;
-      stopBtn.setAttribute('aria-pressed', !running ? 'true' : 'false');
+          <div id="divider-node" class="flow-node">
+            <div class="flow-number">02</div>
+            <div>
+              <strong>Clock Divider</strong>
+              <small id="divider-value">divider_count: 0 / 50,000,000</small>
+            </div>
+          </div>
 
-      lapBtn.disabled = !running;
-      lapBtn.setAttribute('aria-pressed', 'false');
+          <div id="pulse-node" class="flow-node">
+            <div class="flow-number">03</div>
+            <div>
+              <strong>1-Second Pulse</strong>
+              <small id="pulse-value">Waiting for next pulse</small>
+            </div>
+          </div>
 
-      // Show or hide laps section depending on laps presence
-      if (laps.length > 0) {
-        lapsSection.hidden = false;
-      } else {
-        lapsSection.hidden = true;
+          <div id="counter-node" class="flow-node">
+            <div class="flow-number">04</div>
+            <div>
+              <strong>Minute / Second Counter</strong>
+              <small id="counter-value">minutes: 00 · seconds: 00</small>
+            </div>
+          </div>
+
+          <div id="display-node" class="flow-node">
+            <div class="flow-number">05</div>
+            <div>
+              <strong>7-Segment Driver</strong>
+              <small id="segment-value">segment_code: 0x3F 0x3F</small>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="section">
+      <div class="tag">Real FPGA implementation</div>
+      <h2>What would run on the FPGA board?</h2>
+      <p>
+        In a real FPGA project, these separate Verilog modules are connected together
+        in one top-level design.
+      </p>
+
+      <div class="hardware-grid">
+        <article class="hardware-card">
+          <span>MODULE 01</span>
+          <h3>clock_divider.v</h3>
+          <p>Converts the 50 MHz board clock into one clean pulse per second.</p>
+        </article>
+
+        <article class="hardware-card">
+          <span>MODULE 02</span>
+          <h3>stopwatch_fsm.v</h3>
+          <p>Controls Start, Stop, Reset, and Lap button states.</p>
+        </article>
+
+        <article class="hardware-card">
+          <span>MODULE 03</span>
+          <h3>time_counter.v</h3>
+          <p>Counts seconds from 00 to 59, then increases the minute counter.</p>
+        </article>
+
+        <article class="hardware-card">
+          <span>MODULE 04</span>
+          <h3>seven_segment.v</h3>
+          <p>Converts each number into the seven LED segment output pattern.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="log">
+      <h2>Virtual FPGA Activity Log</h2>
+      <div id="event-log" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <footer>Educational FPGA Project · Digital Stopwatch</footer>
+
+  <script>
+    (() => {
+      const CLOCK_HZ = 50000000;
+
+      const display = document.getElementById("display");
+      const status = document.getElementById("status");
+      const startButton = document.getElementById("start-btn");
+      const stopButton = document.getElementById("stop-btn");
+      const lapButton = document.getElementById("lap-btn");
+      const resetButton = document.getElementById("reset-btn");
+      const lapList = document.getElementById("lap-list");
+      const eventLog = document.getElementById("event-log");
+
+      const clockValue = document.getElementById("clock-value");
+      const dividerValue = document.getElementById("divider-value");
+      const pulseValue = document.getElementById("pulse-value");
+      const counterValue = document.getElementById("counter-value");
+      const segmentValue = document.getElementById("segment-value");
+
+      const clockNode = document.getElementById("clock-node");
+      const dividerNode = document.getElementById("divider-node");
+      const pulseNode = document.getElementById("pulse-node");
+      const counterNode = document.getElementById("counter-node");
+      const displayNode = document.getElementById("display-node");
+
+      const segmentCodes = {
+        0: "0x3F", 1: "0x06", 2: "0x5B", 3: "0x4F", 4: "0x66",
+        5: "0x6D", 6: "0x7D", 7: "0x07", 8: "0x7F", 9: "0x6F"
+      };
+
+      let totalCycles = 0;
+      let running = false;
+      let frameId = null;
+      let lastFrameTime = 0;
+      let previousSecond = 0;
+      let lapNumber = 0;
+      let lastPulseTime = 0;
+
+      function formatTime(seconds) {
+        const minutes = Math.floor(seconds / 60) % 100;
+        const secs = seconds % 60;
+        return `${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
       }
-    }
 
-    function tick() {
-      seconds++;
-      if (seconds > 59) {
-        seconds = 0;
-        minutes++;
-        if (minutes > 99) minutes = 0; // wrap after 99:59
+      function addLog(message) {
+        const entry = document.createElement("div");
+        entry.className = "log-entry";
+        entry.textContent = `${formatTime(Math.floor(totalCycles / CLOCK_HZ))}  |  ${message}`;
+        eventLog.prepend(entry);
+
+        while (eventLog.children.length > 10) {
+          eventLog.removeChild(eventLog.lastChild);
+        }
       }
-      updateUI();
-    }
 
-    // Add current time as a lap, display lap times
-    function addLap() {
-      // Push copy of current time to laps array
-      laps.push({ min: minutes, sec: seconds });
-      renderLaps();
-    }
+      function setNodeState(node, active) {
+        node.classList.toggle("active", active);
+      }
 
-    function renderLaps() {
-      lapsList.innerHTML = '';
-      laps.forEach((lap, i) => {
-        const li = document.createElement('li');
-        li.textContent = `Lap ${i + 1}: ${formatTime(lap.min, lap.sec)}`;
-        lapsList.appendChild(li);
-      });
-    }
+      function render() {
+        const seconds = Math.floor(totalCycles / CLOCK_HZ);
+        const minutes = Math.floor(seconds / 60) % 100;
+        const secondValue = seconds % 60;
+        const formattedTime = formatTime(seconds);
+        const dividerCount = Math.floor(totalCycles % CLOCK_HZ);
+        const pulseIsActive = performance.now() - lastPulseTime < 400;
 
-    startBtn.addEventListener('click', () => {
-      if (!running) {
+        display.textContent = formattedTime;
+        display.setAttribute("aria-label", `Stopwatch display: ${formattedTime}`);
+
+        status.textContent = running ? "Running" : "Stopped";
+        status.classList.toggle("running", running);
+
+        startButton.disabled = running;
+        stopButton.disabled = !running;
+        lapButton.disabled = !running;
+
+        clockValue.textContent = `clk_50MHz · ${totalCycles.toLocaleString()} cycles`;
+        dividerValue.textContent = `divider_count: ${dividerCount.toLocaleString()} / 50,000,000`;
+        pulseValue.textContent = pulseIsActive ? "PULSE GENERATED: 1 Hz" : "Waiting for next 1 Hz pulse";
+        counterValue.textContent = `minutes: ${String(minutes).padStart(2, "0")} · seconds: ${String(secondValue).padStart(2, "0")}`;
+
+        const digits = formattedTime.replace(":", "").split("");
+        segmentValue.textContent = `segment_code: ${digits.map(digit => segmentCodes[digit]).join(" ")}`;
+
+        setNodeState(clockNode, running);
+        setNodeState(dividerNode, running);
+        setNodeState(pulseNode, pulseIsActive);
+        setNodeState(counterNode, running);
+        setNodeState(displayNode, true);
+      }
+
+      function animate(now) {
+        if (!running) return;
+
+        const elapsedMilliseconds = now - lastFrameTime;
+        lastFrameTime = now;
+        totalCycles += Math.floor((elapsedMilliseconds / 1000) * CLOCK_HZ);
+
+        const currentSecond = Math.floor(totalCycles / CLOCK_HZ);
+
+        if (currentSecond > previousSecond) {
+          previousSecond = currentSecond;
+          lastPulseTime = now;
+          addLog("Clock divider generated a 1 Hz pulse → counter updated.");
+        }
+
+        render();
+        frameId = requestAnimationFrame(animate);
+      }
+
+      startButton.addEventListener("click", () => {
+        if (running) return;
+
         running = true;
-        updateUI();
-        intervalId = setInterval(tick, 1000);
-        startBtn.focus();
-      }
-    });
+        lastFrameTime = performance.now();
+        addLog("Start button pressed → stopwatch FSM entered RUN state.");
+        render();
+        frameId = requestAnimationFrame(animate);
+      });
 
-    stopBtn.addEventListener('click', () => {
-      if (running) {
+      stopButton.addEventListener("click", () => {
         running = false;
-        clearInterval(intervalId);
-        updateUI();
-        stopBtn.focus();
-      }
-    });
+        cancelAnimationFrame(frameId);
+        addLog("Stop button pressed → stopwatch FSM entered PAUSE state.");
+        render();
+      });
 
-    resetBtn.addEventListener('click', () => {
-      running = false;
-      clearInterval(intervalId);
-      minutes = 0;
-      seconds = 0;
-      laps = [];
-      renderLaps();
-      updateUI();
-      resetBtn.focus();
-    });
+      lapButton.addEventListener("click", () => {
+        lapNumber += 1;
 
-    lapBtn.addEventListener('click', () => {
-      if (running) {
-        addLap();
-        lapBtn.focus();
-      }
-    });
+        if (lapNumber === 1) {
+          lapList.innerHTML = "";
+        }
 
-    updateUI();
-  })();
-</script>
+        const item = document.createElement("li");
+        item.textContent = `Lap ${lapNumber}: ${formatTime(Math.floor(totalCycles / CLOCK_HZ))}`;
+        lapList.prepend(item);
+
+        addLog(`Lap ${lapNumber} stored in virtual stopwatch memory.`);
+      });
+
+      resetButton.addEventListener("click", () => {
+        running = false;
+        cancelAnimationFrame(frameId);
+
+        totalCycles = 0;
+        previousSecond = 0;
+        lapNumber = 0;
+        lastPulseTime = 0;
+        lapList.innerHTML = "<li>No laps recorded yet.</li>";
+        eventLog.innerHTML = "";
+
+        addLog("Reset button pressed → counters and lap memory cleared.");
+        render();
+      });
+
+      addLog("FPGA simulation ready. Waiting for Start command.");
+      render();
+    })();
+  </script>
 </body>
 </html>
